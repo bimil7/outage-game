@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outage Fighters</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0a0f1e; color: #e0e8ff; min-height: 100vh; overflow-x: hidden; }
+  #app { max-width: 480px; margin: 0 auto; padding: 16px; }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* TITLE */
+  #title-screen { text-align: center; padding: 30px 0; }
+  .game-logo { font-size: 2.2rem; font-weight: 700; color: #f5c842; letter-spacing: 2px; text-shadow: 0 0 20px rgba(245,200,66,0.4); }
+  .game-sub { font-size: 0.9rem; color: #7a9cc4; margin-top: 6px; letter-spacing: 1px; text-transform: uppercase; }
+  .bolt { font-size: 3rem; display: block; margin: 20px 0 10px; }
+
+  /* PLAYER SELECT */
+  #select-screen { padding: 20px 0; }
+  .section-title { text-align: center; font-size: 1.1rem; color: #f5c842; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; }
+  .hero-cards { display: flex; flex-direction: column; gap: 12px; }
+  .hero-card { background: #111827; border: 1.5px solid #1e3a5f; border-radius: 14px; padding: 16px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 14px; }
+  .hero-card:hover, .hero-card.selected { border-color: #f5c842; background: #162236; }
+  .hero-icon { font-size: 2.4rem; width: 54px; text-align: center; }
+  .hero-info h3 { font-size: 1rem; font-weight: 600; color: #f5c842; margin-bottom: 4px; }
+  .hero-info p { font-size: 0.78rem; color: #7a9cc4; margin-bottom: 8px; }
+  .stat-bars { display: flex; flex-direction: column; gap: 4px; }
+  .stat-row { display: flex; align-items: center; gap: 8px; font-size: 0.72rem; color: #7a9cc4; }
+  .stat-bar-bg { flex: 1; height: 5px; background: #1e3a5f; border-radius: 3px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 3px; }
+  .atk-bar { background: #e05c5c; }
+  .def-bar { background: #5c9ee0; }
+  .spd-bar { background: #5ce07a; }
+
+  /* BATTLE */
+  #battle-screen { padding: 16px 0; }
+  .wave-badge { text-align: center; font-size: 0.75rem; color: #7a9cc4; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .wave-badge span { color: #f5c842; font-weight: 600; }
+
+  .combatants { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; gap: 10px; }
+  .combatant { flex: 1; background: #111827; border: 1px solid #1e3a5f; border-radius: 12px; padding: 12px; text-align: center; }
+  .combatant .c-icon { font-size: 2.8rem; display: block; margin-bottom: 6px; }
+  .combatant .c-name { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #7a9cc4; margin-bottom: 6px; }
+  .vs-badge { font-size: 1.2rem; font-weight: 700; color: #e05c5c; padding: 0 4px; flex-shrink: 0; }
+  .hp-bar-bg { width: 100%; height: 8px; background: #1e3a5f; border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+  .hp-bar-fill { height: 100%; border-radius: 4px; background: #5ce07a; transition: width 0.3s; }
+  .hp-bar-fill.low { background: #e07a5c; }
+  .hp-text { font-size: 0.7rem; color: #7a9cc4; }
+
+  .combat-log { background: #060d1a; border: 1px solid #1e3a5f; border-radius: 10px; padding: 10px 12px; min-height: 52px; margin-bottom: 16px; font-size: 0.82rem; line-height: 1.5; color: #a0b8d8; }
+  .combat-log .hit { color: #f5c842; }
+  .combat-log .dmg { color: #e05c5c; }
+  .combat-log .heal { color: #5ce07a; }
+
+  .action-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .btn-action { background: #111827; border: 1.5px solid #1e3a5f; border-radius: 10px; padding: 12px 6px; cursor: pointer; text-align: center; transition: all 0.15s; color: #e0e8ff; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .btn-action:hover:not(:disabled) { border-color: #f5c842; background: #162236; transform: scale(1.03); }
+  .btn-action:active:not(:disabled) { transform: scale(0.97); }
+  .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-action .act-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+  .btn-special { border-color: #7a4af5; }
+  .btn-special:hover:not(:disabled) { border-color: #a07cff; }
+  .cooldown-label { font-size: 0.65rem; color: #7a4af5; margin-top: 2px; display: block; }
+
+  .score-bar { display: flex; justify-content: space-between; margin-bottom: 14px; }
+  .score-item { font-size: 0.75rem; color: #7a9cc4; }
+  .score-item span { color: #f5c842; font-weight: 600; }
+
+  /* END SCREEN */
+  #end-screen { text-align: center; padding: 40px 20px; }
+  .end-icon { font-size: 3.5rem; display: block; margin-bottom: 16px; }
+  .end-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+  .end-sub { font-size: 0.9rem; color: #7a9cc4; margin-bottom: 24px; }
+  .final-score { font-size: 2rem; font-weight: 700; color: #f5c842; margin-bottom: 24px; }
+
+  /* SHARED BUTTONS */
+  .btn-primary { display: block; width: 100%; background: #f5c842; color: #0a0f1e; font-size: 0.95rem; font-weight: 700; padding: 14px; border-radius: 12px; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-top: 16px; transition: opacity 0.2s; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-outline { display: block; width: 100%; background: transparent; color: #f5c842; font-size: 0.85rem; font-weight: 600; padding: 12px; border-radius: 12px; border: 1.5px solid #f5c842; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; transition: all 0.2s; }
+  .btn-outline:hover { background: #1a2233; }
+
+  /* SHAKE ANIMATION */
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+  .shake { animation: shake 0.25s ease; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .pulse { animation: pulse 0.4s ease 3; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLE SCREEN -->
+  <div id="title-screen" class="screen active">
+    <span class="bolt">⚡</span>
+    <div class="game-logo">OUTAGE FIGHTERS</div>
+    <div class="game-sub">Defend the city grid</div>
+    <div style="margin-top:30px;color:#7a9cc4;font-size:0.85rem;line-height:1.7;">
+      Power outages are striking the city.<br>
+      Choose your hero and fight back!
+    </div>
+    <button class="btn-primary" onclick="showSelect()">Choose Your Hero</button>
+  </div>
+
+  <!-- SELECT SCREEN -->
+  <div id="select-screen" class="screen">
+    <div class="section-title">Choose Your Fighter</div>
+    <div class="hero-cards" id="hero-cards"></div>
+    <button class="btn-primary" id="start-btn" onclick="startGame()" style="display:none;">Start Battle!</button>
+  </div>
+
+  <!-- BATTLE SCREEN -->
+  <div id="battle-screen" class="screen">
+    <div class="score-bar">
+      <div class="score-item">Wave <span id="wave-num">1</span>/5</div>
+      <div class="score-item">Score <span id="score-val">0</span></div>
+    </div>
+
+    <div class="combatants">
+      <div class="combatant" id="player-combatant">
+        <span class="c-icon" id="p-icon"></span>
+        <div class="c-name" id="p-name"></div>
+        <div class="hp-bar-bg"><div class="hp-bar-fill" id="p-hp-bar" style="width:100%"></div></div>
+        <div class="hp-text"><span id="p-hp">100</span> / <span id="p-max-hp">100</span> HP</div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="combatant" id="enemy-combatant">
+        <span class="c-icon" id="e-icon"></span>
+        <div class="c-name" id="e-name"></div>
+        <div class="hp-bar-bg"><div class="hp-bar-fill" id="e-hp-bar" style="width:100%"></div></div>
+        <div class="hp-text"><span id="e-hp">100</span> / <span id="e-max-hp">100</span> HP</div>
+      </div>
+    </div>
+
+    <div class="combat-log" id="combat-log">Get ready to fight!</div>
+
+    <div class="action-buttons">
+      <button class="btn-action" id="btn-attack" onclick="playerAction('attack')">
+        <span class="act-icon">⚡</span>Attack
+      </button>
+      <button class="btn-action" id="btn-repair" onclick="playerAction('repair')">
+        <span class="act-icon">🔧</span>Repair
+      </button>
+      <button class="btn-action btn-special" id="btn-special" onclick="playerAction('special')">
+        <span class="act-icon">💥</span>Special
+        <span class="cooldown-label" id="cooldown-label">Ready</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div id="end-screen" class="screen">
+    <span class="end-icon" id="end-icon"></span>
+    <div class="end-title" id="end-title"></div>
+    <div class="end-sub" id="end-sub"></div>
+    <div class="final-score" id="final-score"></div>
+    <button class="btn-primary" onclick="restartGame()">Play Again</button>
+    <button class="btn-outline" onclick="showSelect()">Change Hero</button>
+  </div>
+
+</div>
+
+<script>
+const HEROES = [
+  { id: 0, icon: '🔧', name: 'The Technician', desc: 'Balanced fighter with a steady hand', atk: 65, def: 60, spd: 70, maxHp: 120, special: 'Circuit Breaker', specialDesc: 'High-voltage overload (3x damage)', heal: 18 },
+  { id: 1, icon: '⚡', name: 'The Electrician', desc: 'High voltage, low defense', atk: 90, def: 35, spd: 80, maxHp: 90, special: 'Power Surge', specialDesc: 'Massive surge attack (4x damage)', heal: 10 },
+  { id: 2, icon: '🛡️', name: 'Grid Guardian', desc: 'Tank hero with strong defense', atk: 45, def: 90, spd: 50, maxHp: 160, special: 'Shield Wall', specialDesc: 'Heal + reduce next hit', heal: 35 }
+];
+
+const ENEMIES = [
+  { icon: '💡', name: 'Blown Fuse', hp: 60, atk: 18, reward: 100 },
+  { icon: '🌩️', name: 'Blackout Storm', hp: 90, atk: 26, reward: 150 },
+  { icon: '🔌', name: 'Dead Socket', hp: 70, atk: 22, reward: 120 },
+  { icon: '🌪️', name: 'Grid Overload', hp: 120, atk: 32, reward: 200 },
+  { icon: '💀', name: 'Total Collapse', hp: 150, atk: 38, reward: 300 }
+];
+
+let state = {};
+
+function showSelect() {
+  showScreen('select-screen');
+  renderHeroes();
+  state.selectedHero = null;
+  document.getElementById('start-btn').style.display = 'none';
+}
+
+function renderHeroes() {
+  const cont = document.getElementById('hero-cards');
+  cont.innerHTML = HEROES.map(h => `
+    <div class="hero-card" id="hero-${h.id}" onclick="selectHero(${h.id})">
+      <div class="hero-icon">${h.icon}</div>
+      <div class="hero-info">
+        <h3>${h.name}</h3>
+        <p>${h.desc}</p>
+        <div class="stat-bars">
+          <div class="stat-row"><span style="width:46px">ATK</span><div class="stat-bar-bg"><div class="stat-bar-fill atk-bar" style="width:${h.atk}%"></div></div></div>
+          <div class="stat-row"><span style="width:46px">DEF</span><div class="stat-bar-bg"><div class="stat-bar-fill def-bar" style="width:${h.def}%"></div></div></div>
+          <div class="stat-row"><span style="width:46px">SPD</span><div class="stat-bar-bg"><div class="stat-bar-fill spd-bar" style="width:${h.spd}%"></div></div></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectHero(id) {
+  document.querySelectorAll('.hero-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('hero-' + id).classList.add('selected');
+  state.selectedHero = id;
+  document.getElementById('start-btn').style.display = 'block';
+}
+
+function startGame() {
+  const hero = HEROES[state.selectedHero];
+  state = {
+    selectedHero: state.selectedHero,
+    hero: { ...hero, hp: hero.maxHp },
+    wave: 0,
+    score: 0,
+    specialCooldown: 0,
+    shielded: false,
+    busy: false
+  };
+  loadWave();
+  showScreen('battle-screen');
+}
+
+function loadWave() {
+  const e = { ...ENEMIES[state.wave] };
+  e.maxHp = e.hp;
+  state.enemy = e;
+  state.specialCooldown = 0;
+  state.shielded = false;
+  updateUI();
+  setLog(`Wave ${state.wave + 1}: <span class="hit">${e.icon} ${e.name}</span> appears!`);
+  setButtonsDisabled(false);
+}
+
+function updateUI() {
+  const h = state.hero, e = state.enemy;
+  document.getElementById('wave-num').textContent = state.wave + 1;
+  document.getElementById('score-val').textContent = state.score;
+  document.getElementById('p-icon').textContent = h.icon;
+  document.getElementById('p-name').textContent = h.name;
+  document.getElementById('p-hp').textContent = h.hp;
+  document.getElementById('p-max-hp').textContent = h.maxHp;
+  const pPct = Math.max(0, h.hp / h.maxHp * 100);
+  const pBar = document.getElementById('p-hp-bar');
+  pBar.style.width = pPct + '%';
+  pBar.className = 'hp-bar-fill' + (pPct < 30 ? ' low' : '');
+  document.getElementById('e-icon').textContent = e.icon;
+  document.getElementById('e-name').textContent = e.name;
+  document.getElementById('e-hp').textContent = Math.max(0, e.hp);
+  document.getElementById('e-max-hp').textContent = e.maxHp;
+  const ePct = Math.max(0, e.hp / e.maxHp * 100);
+  const eBar = document.getElementById('e-hp-bar');
+  eBar.style.width = ePct + '%';
+  eBar.className = 'hp-bar-fill' + (ePct < 30 ? ' low' : '');
+  const cd = state.specialCooldown;
+  document.getElementById('cooldown-label').textContent = cd > 0 ? `${cd} turn${cd>1?'s':''}` : 'Ready';
+  document.getElementById('btn-special').disabled = cd > 0;
+}
+
+function setLog(html) {
+  document.getElementById('combat-log').innerHTML = html;
+}
+
+function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function playerAction(type) {
+  if (state.busy) return;
+  state.busy = true;
+  setButtonsDisabled(true);
+
+  const h = state.hero, e = state.enemy;
+  let dmg = 0, msg = '';
+
+  if (type === 'attack') {
+    dmg = rnd(Math.floor(h.atk * 0.7), h.atk);
+    e.hp -= dmg;
+    msg = `<span class="hit">⚡ You strike ${e.name}</span> for <span class="dmg">${dmg} damage!</span>`;
+    shakeEl('enemy-combatant');
+  } else if (type === 'repair') {
+    const healAmt = rnd(Math.floor(h.heal * 0.8), h.heal);
+    h.hp = Math.min(h.maxHp, h.hp + healAmt);
+    msg = `<span class="heal">🔧 Repaired circuits! Restored ${healAmt} HP.</span>`;
+    if (state.specialCooldown > 0) state.specialCooldown--;
+  } else if (type === 'special') {
+    if (h.id === 2) {
+      const healAmt = rnd(h.heal, Math.floor(h.heal * 1.5));
+      h.hp = Math.min(h.maxHp, h.hp + healAmt);
+      state.shielded = true;
+      dmg = rnd(Math.floor(h.atk * 0.5), h.atk);
+      e.hp -= dmg;
+      msg = `<span class="heal">🛡️ Shield Wall! Healed ${healAmt} HP and blocked next hit!</span>`;
+    } else {
+      const mult = h.id === 1 ? 4 : 3;
+      dmg = rnd(Math.floor(h.atk * (mult - 0.5)), h.atk * mult);
+      e.hp -= dmg;
+      msg = `<span class="hit">💥 ${h.special}!</span> <span class="dmg">${dmg} massive damage!</span>`;
+      shakeEl('enemy-combatant');
+    }
+    state.specialCooldown = 3;
+  }
+
+  updateUI();
+  setLog(msg);
+
+  if (e.hp <= 0) {
+    setTimeout(() => {
+      state.score += e.reward;
+      state.wave++;
+      if (state.wave >= 5) {
+        endGame(true);
+      } else {
+        setLog(`<span class="heal">✅ ${e.name} defeated! +${e.reward} pts. Next wave incoming...</span>`);
+        setTimeout(loadWave, 1400);
+        state.busy = false;
+      }
+    }, 600);
+    return;
+  }
+
+  setTimeout(() => {
+    let eDmg = rnd(Math.floor(e.atk * 0.7), e.atk);
+    if (state.shielded) { eDmg = Math.floor(eDmg * 0.2); state.shielded = false; }
+    const defMult = 1 - (h.def / 200);
+    eDmg = Math.max(3, Math.floor(eDmg * defMult));
+    h.hp -= eDmg;
+    if (state.specialCooldown > 0 && type !== 'repair') state.specialCooldown--;
+    updateUI();
+    setLog(`<span class="dmg">⚡ ${e.icon} ${e.name} hits you for ${eDmg} damage!</span>`);
+    shakeEl('player-combatant');
+
+    if (h.hp <= 0) {
+      setTimeout(() => endGame(false), 600);
+    } else {
+      state.busy = false;
+      setButtonsDisabled(false);
+    }
+  }, 700);
+}
+
+function shakeEl(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+  setTimeout(() => el.classList.remove('shake'), 300);
+}
+
+function setButtonsDisabled(val) {
+  document.getElementById('btn-attack').disabled = val;
+  document.getElementById('btn-repair').disabled = val;
+  if (!val) {
+    document.getElementById('btn-special').disabled = state.specialCooldown > 0;
+  } else {
+    document.getElementById('btn-special').disabled = true;
+  }
+}
+
+function endGame(won) {
+  showScreen('end-screen');
+  if (won) {
+    document.getElementById('end-icon').textContent = '🏆';
+    document.getElementById('end-title').textContent = 'City Saved!';
+    document.getElementById('end-sub').textContent = 'You defeated all 5 power outages. The grid is restored!';
+  } else {
+    document.getElementById('end-icon').textContent = '💀';
+    document.getElementById('end-title').textContent = 'Grid Collapsed';
+    document.getElementById('end-sub').textContent = 'The outage was too powerful. The city went dark...';
+  }
+  document.getElementById('final-score').textContent = `Score: ${state.score}`;
+}
+
+function restartGame() {
+  const prev = state.selectedHero;
+  state.selectedHero = prev;
+  startGame();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
